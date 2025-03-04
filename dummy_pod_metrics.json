@@ -1,19 +1,55 @@
 {
-  "kind": "PodMetrics",
-  "apiVersion": "metrics.k8s.io/v1beta1",
-  "metadata": {
-    "name": "example-pod",
-    "namespace": "default",
-    "creationTimestamp": "2024-03-02T10:00:00Z"
-  },
-  "timestamp": "2024-03-02T10:00:00Z",
-  "window": "30s",
-  "containers": [
+  "pods": [
     {
-      "name": "example-container",
-      "usage": {
-        "cpu": "15m",
-        "memory": "120Mi"
+      "namespace": "default",
+      "name": "pod-1",
+      "metrics": {
+        "containers": [
+          {
+            "name": "container-1",
+            "usage": {
+              "cpu": "50m",
+              "memory": "100Mi"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "namespace": "kube-system",
+      "name": "pod-2",
+      "metrics": {
+        "containers": [
+          {
+            "name": "container-1",
+            "usage": {
+              "cpu": "300m",
+              "memory": "400Mi"
+            }
+          },
+          {
+            "name": "container-2",
+            "usage": {
+              "cpu": "150m",
+              "memory": "200Mi"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "namespace": "production",
+      "name": "pod-3",
+      "metrics": {
+        "containers": [
+          {
+            "name": "container-1",
+            "usage": {
+              "cpu": "10m",
+              "memory": "20Mi"
+            }
+          }
+        ]
       }
     }
   ]
