@@ -1,0 +1,68 @@
+---
+- name: Deploy NGINX with HTTPS on Ubuntu
+  hosts: "{{ env }}"
+  become: true
+
+  vars:
+    ssl_cert_path: "/etc/ssl/certs/nginx-selfsigned.crt"
+    ssl_key_path: "/etc/ssl/private/nginx-selfsigned.key"
+
+  tasks:
+
+    - name: Install NGINX
+      apt:
+        name: nginx
+        state: present
+        update_cache: yes
+
+    - name: Create SSL certificate directory
+      file:
+        path: /etc/ssl/private
+        state: directory
+        mode: '0700'
+
+    - name: Generate self-signed SSL certificate
+      openssl_certificate:
+        path: "{{ ssl_cert_path }}"
+        privatekey_path: "{{ ssl_key_path }}"
+        common_name: "localhost"
+        provider: selfsigned
+        state: present
+        days: 365
+
+    - name: Configure NGINX for HTTPS
+      copy:
+        dest: /etc/nginx/sites-available/default
+        content: |
+          server {
+              listen 443 ssl;
+              server_name localhost;
+
+              ssl_certificate {{ ssl_cert_path }};
+              ssl_certificate_key {{ ssl_key_path }};
+
+              location / {
+                  root /var/www/html;
+                  index index.html index.htm;
+              }
+          }
+
+          server {
+              listen 80;
+              server_name localhost;
+              return 301 https://$host$request_uri;
+          }
+
+    - name: Ensure NGINX auto-restarts on failure
+      systemd:
+        name: nginx
+        enabled: yes
+        state: restarted
+        daemon_reload: yes
+        restart_sec: 5
+        failure_action: restart
+
+    - name: Reload NGINX to apply changes
+      service:
+        name: nginx
+        state: restarted

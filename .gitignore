@@ -1,0 +1,8 @@
+# Ignore IDE settings
+.idea/
+
+# Ignore Python virtual environments
+.venv/
+
+# Ignore Airflow directory
+airflow/

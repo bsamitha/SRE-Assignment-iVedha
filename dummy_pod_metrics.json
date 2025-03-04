@@ -1,0 +1,20 @@
+{
+  "kind": "PodMetrics",
+  "apiVersion": "metrics.k8s.io/v1beta1",
+  "metadata": {
+    "name": "example-pod",
+    "namespace": "default",
+    "creationTimestamp": "2024-03-02T10:00:00Z"
+  },
+  "timestamp": "2024-03-02T10:00:00Z",
+  "window": "30s",
+  "containers": [
+    {
+      "name": "example-container",
+      "usage": {
+        "cpu": "15m",
+        "memory": "120Mi"
+      }
+    }
+  ]
+}
