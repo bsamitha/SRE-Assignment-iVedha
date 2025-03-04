@@ -1,3 +1,24 @@
+#!/usr/bin/env python3
+
+"""
+-------------------Root Cause Analysis Automation (Python & Logstash)-------------------
+
+Requires Python 3.13.2
+
+This script automates the root cause analysis from last 24 hours logs from logstash.
+    - Collects log data from Logstash for the past 24 hours. .
+    - Analyzes logs for common error patterns (e.g., connection timeouts, 500 errors).
+    - Generates an automated incident summary with suggested remediation .
+
+Developer Test Data:
+mock api response = mock_logstash_response.json
+summary report = error_summary.json
+
+Note: This can be automated through a cron job and send a email notification for a better monitoring
+
+-------------------DeveloperTested with mock data-------------------
+"""
+
 import requests
 import json
 import datetime
@@ -11,9 +32,9 @@ ERROR_PATTERNS = {
     "Java heap space": "Heap size might be too small; consider tuning.",
     "GC overhead limit exceeded": "Review garbage collection logs and optimize.",
     "JDBCConnectionException": "Check database availability and connection pool settings.",
-# "500": "Investigate application errors and server logs.",
+    "500": "Investigate application errors and server logs."
 }
-SUMMARY_FILE = "incident_summary.json"
+SUMMARY_FILE = "error_summary.json"
 
 
 # Fetch Logs from Logstash
@@ -33,13 +54,16 @@ def fetch_logs():
         "size": 10000
     }
 
-    with open("mock_logstash_response.json", "r") as file:
-        logs = json.load(file)
-        print("test")
+
     try:
+        # Actual api call for logstash to get the raw log
         # response = requests.post(LOGSTASH_ENDPOINT, json=query)
         # response.raise_for_status()
         # logs = response.json()
+
+        # Mock Data For Developer Testing
+        with open("mock_logstash_response.json", "r") as file:
+            logs = json.load(file)
         return [hit["_source"]["message"] for hit in logs["hits"]["hits"]]
     except Exception as e:
         print(f"[ERROR] Failed to fetch logs: {e}")
@@ -53,7 +77,7 @@ def analyze_logs(logs):
 
     for log in logs:
         for pattern in ERROR_PATTERNS.keys():
-            if pattern in log.lower():
+            if pattern in log:
                 error_counts[pattern] += 1
                 matched_logs.append({"pattern": pattern, "log": log})
                 break
@@ -74,9 +98,7 @@ def generate_summary(error_counts, matched_logs):
             "error": error,
             "count": count,
             "remediation": ERROR_PATTERNS[error]
-        })
-
-    summary["sample_logs"] = matched_logs[:5]  # Include first 5 matched logs as examples
+        })  # Include first 5 matched logs as examples
 
     with open(SUMMARY_FILE, "w") as f:
         json.dump(summary, f, indent=4)

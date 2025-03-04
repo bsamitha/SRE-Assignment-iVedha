@@ -36,7 +36,7 @@ from email.mime.text import MIMEText
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
 EMAIL_USER = "basnayakemsl@gmail.com"
-EMAIL_PASS = ""
+EMAIL_PASS = "hmhu vtkg qxsf lfpg"
 EMAIL_TO = "basnayake92@gmail.com"
 
 

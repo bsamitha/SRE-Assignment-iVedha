@@ -1,0 +1,31 @@
+{
+    "generated_at": "2025-03-04T12:39:31.093489",
+    "error_summary": [
+        {
+            "error": "JDBCConnectionException",
+            "count": 125,
+            "remediation": "Check database availability and connection pool settings."
+        },
+        {
+            "error": "OutOfMemoryError",
+            "count": 138,
+            "remediation": "Analyze heap usage and increase JVM memory settings."
+        },
+        {
+            "error": "Java heap space",
+            "count": 124,
+            "remediation": "Heap size might be too small; consider tuning."
+        },
+        {
+            "error": "GC overhead limit exceeded",
+            "count": 109,
+            "remediation": "Review garbage collection logs and optimize."
+        },
+        {
+            "error": "500",
+            "count": 123,
+            "remediation": "Investigate application errors and server logs."
+        }
+    ],
+    "total_errors_found": 619
+}

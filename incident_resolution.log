@@ -1,0 +1,2 @@
+2025-03-04 13:33:49.932926 | Alert: ServiceCrashDetected | Action: Service 'Tomcat' restarted at 2025-03-04 13:33:49.932706
+2025-03-04 13:33:49.933547 | Alert: ServiceCrashFrontend | Action: Service 'Apache httpd' restarted at 2025-03-04 13:33:49.933383

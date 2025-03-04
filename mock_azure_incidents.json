@@ -1,0 +1,52 @@
+{
+  "value": [
+    {
+      "name": "HighCPUUsage",
+      "properties": {
+        "essentials": {
+          "severity": "Sev3",
+          "signalType": "Metric",
+          "monitorCondition": "Fired",
+          "service": "",
+          "description": "CPU usage is above 90% on VM 'web-server-01'."
+        }
+      }
+    },
+    {
+      "name": "ServiceCrashDetected",
+      "properties": {
+        "essentials": {
+          "severity": "Sev2",
+          "signalType": "Log",
+          "monitorCondition": "Fired",
+          "service": "Tomcat",
+          "description": "Application service 'tomcat' has crashed unexpectedly."
+        }
+      }
+    },
+    {
+      "name": "DiskSpaceLow",
+      "properties": {
+        "essentials": {
+          "severity": "Sev3",
+          "signalType": "Metric",
+          "monitorCondition": "Fired",
+          "service": "",
+          "description": "Disk space below 10% on 'database-server'."
+        }
+      }
+    },
+    {
+      "name": "ServiceCrashFrontend",
+      "properties": {
+        "essentials": {
+          "severity": "Sev1",
+          "signalType": "Log",
+          "monitorCondition": "Fired",
+          "service": "Apache httpd",
+          "description": "Frontend service 'Apache httpd' crash detected."
+        }
+      }
+    }
+  ]
+}

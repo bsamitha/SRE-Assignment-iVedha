@@ -1,141 +1,111 @@
+#!/usr/bin/env python3
+
+"""
+-------------------Incident Detection & Auto-Resolution (Python & Azure Monitor)-------------------
+
+Requires Python 3.13.2
+
+This script automates active incident detection from azure monitor and auto resolve any service crash
+    - Fetches active incident alerts from Azure Monitor
+    - If an alert is related to a service crash, automatically attempts a restart.
+    - Logs all resolutions and sends an email summary.
+
+Developer Test Data:
+mock api response = mock_azure_incidents.json
+summary report = incident_resolution.log
+
+-------------------DeveloperTested with mock data-------------------
+"""
+
+import requests
+import json
 import smtplib
-import logging
 from email.mime.text import MIMEText
 from datetime import datetime
-from azure.identity import DefaultAzureCredential
-from azure.monitor.query import LogsQueryClient
-from azure.monitor.query import LogsQueryStatus
 
-# ======================
-# Configuration Section
-# ======================
+# CONFIGURATION
+AZURE_MONITOR_ALERTS_ENDPOINT = "https://management.azure.com/subscriptions/<SUBSCRIPTION_ID>/providers/Microsoft.AlertsManagement/alerts?api-version=2019-05-05"
+ACCESS_TOKEN = "<YOUR_AZURE_BEARER_TOKEN>"
+LOG_FILE = "incident_resolution.log"
 
+EMAIL_FROM = "basnayakemsl@gmail.com"
+EMAIL_TO = "basnayake92@gmail.com"
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
-EMAIL_FROM = "your_email@gmail.com"
-EMAIL_TO = "recipient_email@gmail.com"
-EMAIL_PASSWORD = "your_app_password"
+SMTP_USERNAME = "basnayakemsl@gmail.com"
+SMTP_PASSWORD = ""
 
-AZURE_LOG_WORKSPACE_ID = "<YOUR_LOG_WORKSPACE_ID>"
-QUERY_TIME_RANGE = "PT1H"  # Last 1 hour
+# FETCH ACTIVE INCIDENTS
+def fetch_active_incidents():
+    headers = {
+        "Authorization": f"Bearer {ACCESS_TOKEN}",
+        "Content-Type": "application/json"
+    }
+    try:
+        # Actual API call for get incidents
+        # response = requests.get(AZURE_MONITOR_ALERTS_ENDPOINT, headers=headers)
+        # response.raise_for_status()
+        # alerts = response.json()
 
-SERVICE_RESTART_COMMANDS = {
-    "nginx": "sudo systemctl restart nginx",
-    "apache2": "sudo systemctl restart apache2"
-}
+        # Mock Data For Developer Testing
+        with open("mock_azure_incidents.json") as f:
+            alerts = json.load(f)
+        return alerts.get("value", [])
+    except Exception as e:
+        print(f"[ERROR] Failed to fetch incidents: {e}")
+        return []
 
-# ======================
-# Logging Setup
-# ======================
+# MOCK SERVICE RESTART
+def restart_service(service_name):
+    # Replace this with actual restart logic
+    print(f"[INFO] Restarting service: {service_name}")
+    return f"Service '{service_name}' restarted at {datetime.utcnow()}"
 
-logging.basicConfig(
-    filename="incident_resolution.log",
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
-)
+# LOG RESOLUTIONS
+def log_resolution(alert_name, action):
+    with open(LOG_FILE, "a") as log_file:
+        log_file.write(f"{datetime.utcnow()} | Alert: {alert_name} | Action: {action}\n")
 
-
-# ======================
-# Fetch Azure Alerts
-# ======================
-
-def fetch_active_alerts():
-    credential = DefaultAzureCredential()
-    client = LogsQueryClient(credential)
-
-    query = """
-    AzureDiagnostics
-    | where Category == "ServiceHealth"
-    | where Status_s == "Active"
-    | project TimeGenerated, Resource, AlertName_s, Description, Status_s
-    """
-
-    result = client.query_workspace(
-        workspace_id=AZURE_LOG_WORKSPACE_ID,
-        query=query,
-        timespan=QUERY_TIME_RANGE
-    )
-
-    alerts = []
-    if result.status == LogsQueryStatus.SUCCESS:
-        for row in result.tables[0].rows:
-            alerts.append({
-                "time": row[0],
-                "resource": row[1],
-                "name": row[2],
-                "description": row[3],
-                "status": row[4]
-            })
-    else:
-        logging.error("Failed to fetch Azure alerts.")
-
-    return alerts
-
-
-# ======================
-# Restart Service (Mock)
-# ======================
-
-def restart_service(resource, service):
-    restart_command = SERVICE_RESTART_COMMANDS.get(service)
-    if restart_command:
-        logging.info(f"Restarting {service} on {resource}.")
-        # Actual SSH/remote execution code would go here.
-        return True
-    else:
-        logging.error(f"No restart command defined for {service}.")
-        return False
-
-
-# ======================
-# Send Email Summary
-# ======================
-
-def send_email_summary(resolved, failed):
-    body = f"Resolved Incidents:\n"
-    for item in resolved:
-        body += f"- {item}\n"
-    body += "\nFailed Resolutions:\n"
-    for item in failed:
-        body += f"- {item}\n"
-
-    msg = MIMEText(body)
-    msg["Subject"] = "[Incident Auto-Resolution Report]"
+# SEND EMAIL SUMMARY
+def send_email(summary):
+    msg = MIMEText(summary)
+    msg["Subject"] = "Incident Auto-Resolution Report"
     msg["From"] = EMAIL_FROM
     msg["To"] = EMAIL_TO
 
     try:
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
-        server.starttls()
-        server.login(EMAIL_FROM, EMAIL_PASSWORD)
-        server.sendmail(EMAIL_FROM, EMAIL_TO, msg.as_string())
-        server.quit()
-        logging.info("Summary email sent successfully.")
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+            server.starttls()
+            server.login(SMTP_USERNAME, SMTP_PASSWORD)
+            server.send_message(msg)
+        print("[INFO] Email summary sent.")
     except Exception as e:
-        logging.error(f"Failed to send email: {e}")
+        print(f"[ERROR] Failed to send email: {e}")
 
-
-# ======================
-# Main Process
-# ======================
-
+# MAIN EXECUTION
 def main():
-    alerts = fetch_active_alerts()
-    resolved = []
-    failed = []
+    incidents = fetch_active_incidents()
+    if not incidents:
+        print("[INFO] No active incidents found.")
+        return
 
-    for alert in alerts:
-        if "crash" in alert["description"].lower():
-            service = "nginx"  # Simplified; map from resource if needed.
-            success = restart_service(alert["resource"], service)
-            if success:
-                message = f"{service} on {alert['resource']} restarted."
-                resolved.append(message)
-            else:
-                message = f"{service} on {alert['resource']} failed to restart."
-                failed.append(message)
+    email_summary = "Incident Auto-Resolution Report\n\n"
 
-    send_email_summary(resolved, failed)
+    for alert in incidents:
+        alert_name = alert.get("name")
+        SERVICE_NAME = alert['properties']['essentials']['service']
+        alert_description = alert.get("properties", {}).get("essentials", {}).get("description", "")
+
+        print(f"[INFO] Processing alert: {alert_name}")
+
+        if "crash" in alert_description.lower():
+            action = restart_service(SERVICE_NAME)
+            log_resolution(alert_name, action)
+            email_summary += f"✔ Alert: {alert_name}\n   ➤ Action: {action}\n\n"
+        else:
+            email_summary += f"✖ Alert: {alert_name}\n   ➤ No action taken.\n\n"
+
+    send_email(email_summary)
 
 
 if __name__ == "__main__":
