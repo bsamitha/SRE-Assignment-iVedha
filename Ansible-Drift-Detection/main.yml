@@ -1,0 +1,70 @@
+---
+- name: Drift Detection
+  hosts: "{{ env }}"
+  gather_facts: yes
+  become: yes
+
+  vars:
+    log_file: "./logs/drift_report.log"
+    remediate: false  # Default; pass "-e remediate=true" to enable
+
+  tasks:
+    - name: Check if {{ software }} is installed and get version
+      shell: "{{ software }} --version | awk 'NR==1{print $NF}'"
+      register: version_check
+      ignore_errors: yes
+
+    - name: Determine drift status
+      set_fact:
+        drift_status: >-
+          {% if version_check.stdout is defined and version_check.stdout == version %}
+            OK
+          {% elif version_check.stdout is defined %}
+            DRIFT DETECTED
+          {% else %}
+            NOT INSTALLED
+          {% endif %}
+
+    - name: Log drift result
+      copy:
+        content: |
+          Software: {{ software }}
+          Expected Version: {{ version }}
+          Found Version: {{ version_check.stdout | default('Not Installed') }}
+          Status: {{ drift_status }}
+          Remediation: {{ remediate }}
+          -------------------------------
+        dest: "{{ log_file }}"
+        force: no
+        mode: '0644'
+
+    - name: Show drift status
+      debug:
+        msg: |
+          Drift Status: {{ drift_status }}
+          Found Version: {{ version_check.stdout | default('Not Installed') }}
+          Remediation: {{ remediate }}
+
+    - name: install correct version
+      when: remediate | bool and drift_status != 'OK'
+      block:
+        - name: Install required version of {{ software }}
+          apt:
+            name: "{{ software }}={{ version }}*"
+            state: present
+            update_cache: yes
+
+        - name: Confirm version after remediation
+          shell: "{{ software }} --version | awk 'NR==1{print $NF}'"
+          register: post_remediation_version
+
+        - name: Log post-remediation version
+          copy:
+            content: |
+              Post-remediation check:
+              Software: {{ software }}
+              Installed Version: {{ post_remediation_version.stdout }}
+              -------------------------------
+            dest: "{{ log_file }}"
+            force: no
+            mode: '0644'
